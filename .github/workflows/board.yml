@@ -1,17 +1,24 @@
 # 全国番付を 10 分おきに更新して GitHub Pages に置く
+# 2026-10-29: 予定の実行（schedule）が 4 時間 1 度も動かなかったので、GitHub の説明書と同じ形に書き直した（前は 1 行の流れの形）。
+# 予定の実行は GitHub の混み具合で遅れる事がある（10 分おきは目安）
 name: board
 on:
-  schedule: [{ cron: "*/10 * * * *" }]
-  workflow_dispatch: {}
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: board
+  cancel-in-progress: false
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        with:
+          python-version: "3.12"
       - run: python publish.py
         env:
           BOARD_URL: ${{ secrets.BOARD_URL }}
@@ -20,5 +27,6 @@ jobs:
       - run: |
           if [ -n "$(git status --porcelain board.txt)" ]; then
             git config user.name "board-bot"; git config user.email "board-bot@users.noreply.github.com"
-            git add board.txt && git commit -m "update board" && git push
+            git add board.txt && git commit -m "update board"
+            git pull --rebase --autostash && git push
           fi
